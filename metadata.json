@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Triadic Mind Studio",
+  "description": "A creative sandbox for co-creation with an AI partner. Use the foundational principles of Logic, Intuition, and Emotion as creative lenses to develop your ideas in a living system that grows with you.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

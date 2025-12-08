@@ -1,0 +1,366 @@
+
+<div class="flex flex-col min-h-screen max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 bg-gray-900 text-gray-100 font-sans">
+  <!-- Global Error -->
+  @if(globalError(); as error) {
+    <div class="bg-rose-800/90 border border-rose-600 text-white px-4 py-3 rounded-lg relative mb-4 flex justify-between items-center animate-fade-in" role="alert">
+      <span class="block sm:inline">{{ error }}</span>
+      <button (click)="globalError.set(null)" class="p-1 rounded-md hover:bg-rose-700 transition-colors" title="Dismiss">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="text-center mb-6">
+    <h1 class="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-rose-400">
+      Triadic Mind Studio
+    </h1>
+    <p class="text-gray-400 mt-2">A co-creative sandbox for you and your AI partner.</p>
+  </header>
+
+  <!-- Seed Idea Input -->
+  <div class="mb-2">
+    <label for="seed-idea" class="block text-lg font-medium text-gray-300 mb-2">1. Plant a Seed Idea</label>
+    <textarea
+      id="seed-idea"
+      [ngModel]="seedIdea()"
+      (ngModelChange)="seedIdea.set($event)"
+      placeholder="Enter your core concept, question, or vision here..."
+      class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow duration-200"
+      rows="3"
+      title="This is the central theme for all idea generation."></textarea>
+  </div>
+  
+  <!-- Sandbox Controls -->
+  <div class="mb-6 p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
+      <label class="block text-lg font-medium text-gray-300 mb-3">2. Choose Your Creative Lenses</label>
+      <div class="flex items-center justify-between gap-4">
+          <div class="flex flex-wrap gap-4">
+              @for(lens of lenses; track lens; let i = $index) {
+                  <label class="flex items-center cursor-pointer select-none">
+                      <input type="checkbox" class="custom-checkbox" [checked]="selectedLenses().has(lens.name)" (change)="toggleLensSelection(lens.name)" [attr.title]="'Toggle ' + lens.name + ' lens (Cmd/Ctrl + ' + (i + 1) + ')'">
+                      <span class="ml-2 font-semibold" [class]="lens.color">{{ lens.name }}</span>
+                  </label>
+              }
+          </div>
+          <div class="flex items-center gap-2">
+            <button (click)="clearAllIdeas()" title="Clear all generated ideas from every lens" class="px-3 py-3 rounded-lg font-semibold text-gray-300 hover:text-white bg-gray-700 hover:bg-rose-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+            </button>
+            <button
+              (click)="generateForSelectedLenses()"
+              [disabled]="!seedIdea() || selectedLenses().size === 0 || isGeneratingIdeas()"
+              class="flex justify-center items-center px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500 disabled:opacity-50 disabled:saturate-50 disabled:cursor-not-allowed bg-gradient-to-r from-sky-600 to-indigo-600"
+              title="Generate ideas using the selected lenses (Cmd/Ctrl + Enter)">
+               @if(!isGeneratingIdeas()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+                  </svg>
+                  <span>Generate Ideas</span>
+                } @else {
+                  <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                  <span class="ml-3">Generating...</span>
+                }
+            </button>
+          </div>
+      </div>
+  </div>
+
+
+  <!-- Lenses Section -->
+  <div class="flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 min-h-0">
+    @for(lens of lenses; track lens.name) {
+      <div class="flex flex-col bg-gray-800/50 rounded-lg shadow-lg p-4 border border-gray-700/50">
+        <div class="flex items-center mb-4 pb-3 border-b border-gray-700">
+          <span [innerHTML]="lens.icon" [class]="lens.color"></span>
+          <h2 class="text-xl font-semibold" [class]="lens.color">{{ lens.name }}</h2>
+        </div>
+        
+        <div class="flex-grow overflow-y-auto space-y-3 custom-scrollbar pr-2">
+          @if(getLensIdeas(lens.name)().length === 0) {
+            <div class="text-center text-gray-500 pt-8">
+              <p>Ideas for the {{ lens.name }} lens will appear here.</p>
+            </div>
+          }
+          @for(idea of getLensIdeas(lens.name)(); track idea.id) {
+            <div class="group bg-gray-700/50 p-3 rounded-lg text-gray-300 animate-fade-in text-sm relative transition-all duration-200 hover:bg-gray-700" [class.is-refining]="idea.isRefining">
+              @if (!idea.isEditing) {
+                <p class="pr-20 break-words whitespace-pre-wrap">{{ idea.content }}</p>
+                <div class="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button (click)="generateIcon(lens.name, idea)" [disabled]="idea.isGeneratingIcon" class="p-1.5 text-gray-400 hover:text-white hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-wait" title="Generate Icon">
+                    @if(idea.isGeneratingIcon) {
+                      <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.47 2.118 2.25 2.25 0 0 1-2.47-2.118c0-1.063.37-2.094.992-2.88a3 3 0 0 0 5.78-1.128 2.25 2.25 0 0 1 2.47-2.118 2.25 2.25 0 0 1 2.47 2.118c0 1.063-.37 2.094-.992 2.88Z" /></svg>
+                    }
+                  </button>
+                  <button (click)="startEditing(lens.name, idea)" class="p-1.5 text-gray-400 hover:text-white hover:bg-gray-600 rounded" title="Edit idea">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 19.07a4.5 4.5 0 0 1-1.897 1.13L6 21l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+                  </button>
+                  <button (click)="copyIdea(idea.content, idea.id)" class="p-1.5 text-gray-400 hover:text-white hover:bg-gray-600 rounded" title="Copy idea">
+                    @if (copiedIdeaId() === idea.id) {
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-green-400"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375-3.375-3.375m0 0A9.064 9.064 0 0 1 12 6.375a9.064 9.064 0 0 1 2.625 6.375m0 0v3.375" /></svg>
+                    }
+                  </button>
+                </div>
+                @if(idea.iconSvg) {
+                  <div class="idea-icon mt-2 w-8 h-8" [class]="lens.color" [innerHTML]="idea.iconSvg"></div>
+                }
+              } @else {
+                <div class="relative">
+                  <textarea #editArea
+                    class="w-full bg-gray-600 border border-gray-500 rounded p-2 pr-20 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+                    [value]="idea.content" 
+                    (keydown.enter)="saveEdit(lens.name, idea, editArea.value); $event.preventDefault()"
+                    (keydown.escape)="cancelEdit(lens.name, idea)"
+                    rows="4"
+                    autofocus
+                  ></textarea>
+                  <div class="absolute top-1 right-1 flex flex-col gap-1">
+                      <button (click)="saveEdit(lens.name, idea, editArea.value)" class="p-1.5 text-gray-300 hover:text-white bg-gray-700 hover:bg-green-600 rounded" title="Save changes (Enter)">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                      </button>
+                      <button (click)="cancelEdit(lens.name, idea)" class="p-1.5 text-gray-300 hover:text-white bg-gray-700 hover:bg-rose-600 rounded" title="Cancel edit (Escape)">
+                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                      </button>
+                       <button (click)="refineIdea(lens.name, idea)" [disabled]="idea.isRefining" class="p-1.5 text-gray-300 hover:text-white bg-gray-700 hover:bg-indigo-600 rounded disabled:opacity-50 disabled:cursor-not-allowed" title="Refine with AI">
+                          @if(idea.isRefining) {
+                             <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          } @else {
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" /></svg>
+                          }
+                      </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Synthesis Studio -->
+  <div class="mt-8 pt-6 border-t border-gray-700">
+    <div class="flex flex-col sm:flex-row justify-between items-start mb-4 gap-4">
+        <div>
+            <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-rose-400">
+                3. Synthesis Studio
+            </h2>
+            <p class="text-gray-400 text-sm">Weave your generated ideas into a masterpiece.</p>
+        </div>
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <button (click)="clearSynthesis()" [disabled]="!synthesisResult() && !synthesisTitle()" title="Clear synthesis text" class="w-auto flex justify-center items-center px-4 py-3 rounded-lg font-semibold text-gray-300 hover:text-white bg-gray-700 hover:bg-rose-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9.75 14.25 12m0 0 2.25 2.25M14.25 12 12 14.25m-2.58 4.92a9 9 0 1 1 .18-13.04l.16.17" /></svg>
+        </button>
+        <button
+            (click)="synthesize()"
+            [disabled]="!canSynthesize() || isSynthesizing()"
+            title="Synthesize ideas from at least two lenses (Cmd/Ctrl + S)"
+            class="w-full sm:w-auto flex justify-center items-center px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500 disabled:opacity-50 disabled:saturate-50 disabled:cursor-not-allowed bg-gradient-to-r from-sky-500 via-indigo-500 to-rose-500"
+        >
+            @if(!isSynthesizing()) {
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
+            </svg>
+            <span>Synthesize with AI</span>
+            } @else {
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+            <span class="ml-3">Synthesizing...</span>
+            }
+        </button>
+      </div>
+    </div>
+
+    <div class="relative bg-gray-800 rounded-lg border border-gray-700 p-1">
+        @if(synthesisTitle()) {
+            <h3 class="text-xl font-bold p-3 text-gray-200 border-b border-gray-700">{{ synthesisTitle() }}</h3>
+        }
+        <textarea
+            id="synthesis-area"
+            [ngModel]="synthesisResult()"
+            (ngModelChange)="synthesisResult.set($event)"
+            placeholder="Click 'Synthesize with AI' once you have ideas from at least two lenses, or start writing your own synthesis here..."
+            class="w-full bg-gray-800 rounded-b-lg p-3 text-gray-200 placeholder-gray-500 focus:outline-none ring-0 border-0"
+            rows="12"></textarea>
+    </div>
+  </div>
+
+  <!-- Voice Studio -->
+  <div class="mt-8 pt-6 border-t border-gray-700">
+    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-rose-400 mb-4 text-center sm:text-left">
+      Voice Studio
+    </h2>
+    <div class="bg-gray-800/50 rounded-lg p-4 min-h-[200px] flex flex-col justify-between border border-gray-700/50">
+      <div class="conversation-log flex-grow overflow-y-auto space-y-4 pr-2 mb-4 custom-scrollbar">
+        @if(conversationLog().length === 0 && !isProcessingAudio()) {
+          <div class="text-center text-gray-500 pt-8">
+            <p>Tap the mic to talk. Pause when you're done, and I'll take it from there.</p>
+          </div>
+        }
+        @for(entry of conversationLog(); track entry.id) {
+          <div class="flex" [class.justify-end]="entry.from === 'user'">
+            @if(entry.from === 'ai') {
+              <div class="bg-indigo-900/50 p-3 rounded-lg max-w-xl text-gray-200 animate-fade-in">
+                {{ entry.content }}
+              </div>
+            } @else {
+              <div class="bg-gray-700/80 p-3 rounded-lg text-gray-300 animate-fade-in">
+                {{ entry.content }}
+              </div>
+            }
+          </div>
+        }
+         @if (isProcessingAudio()) {
+          <div class="flex justify-start">
+              <div class="bg-indigo-900/50 p-3 rounded-lg max-w-xl text-gray-200 animate-fade-in">
+                  <div class="flex items-center space-x-2">
+                      <div class="thinking-bubble"></div>
+                      <div class="thinking-bubble" style="animation-delay: 0.1s;"></div>
+                      <div class="thinking-bubble" style="animation-delay: 0.2s;"></div>
+                  </div>
+              </div>
+          </div>
+        }
+      </div>
+      <div class="flex justify-center items-center pt-4 border-t border-gray-700">
+          <button (click)="toggleRecording()" [disabled]="isProcessingAudio()" title="Toggle voice recording" class="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-wait" [class.bg-rose-600]="isRecording()" [class.hover:bg-rose-500]="isRecording()" [class.focus:ring-rose-400]="isRecording()" [class.bg-indigo-600]="!isRecording()" [class.hover:bg-indigo-500]="!isRecording()" [class.focus:ring-indigo-400]="!isRecording()">
+          @if(isProcessingAudio()) {
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          } @else if (isRecording()) {
+            <canvas #waveformCanvas class="w-14 h-14" width="56" height="56"></canvas>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-white">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m12 0v-1.5a6 6 0 0 0-6-6v0a6 6 0 0 0-6 6v1.5m12 0v-1.5a6 6 0 0 0-6-6v0a6 6 0 0 0-6 6v1.5m6 7.5v3.375m-3.75-3.375h7.5" />
+            </svg>
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vision Studio -->
+  <div class="mt-8 pt-6 border-t border-gray-700">
+    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-rose-400 mb-4 text-center sm:text-left">
+      Vision Studio
+    </h2>
+    <div class="bg-gray-800/50 rounded-lg border border-gray-700/50">
+      <!-- Tabs -->
+      <div class="flex border-b border-gray-700">
+        <button (click)="activeVisionTab.set('analyze')" class="vision-tab" [class.active]="activeVisionTab() === 'analyze'" title="Upload an image and ask the AI questions about it.">Analyze Image</button>
+        <button (click)="activeVisionTab.set('generateImage')" class="vision-tab" [class.active]="activeVisionTab() === 'generateImage'" title="Create a new image from a text description.">Generate Image</button>
+        <button (click)="activeVisionTab.set('generateVideo')" class="vision-tab" [class.active]="activeVisionTab() === 'generateVideo'" title="Upload a static image and bring it to life with an animation prompt.">Generate Video</button>
+      </div>
+
+      <div class="p-4 sm:p-6">
+        <!-- Analyze Image Tab -->
+        @if (activeVisionTab() === 'analyze') {
+          <div class="animate-fade-in">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-gray-300 mb-2">1. Upload Image</label>
+                <div class="drop-zone" title="Drop an image file here or click to upload">
+                  <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" (change)="onFileSelected($event, 'analyze')">
+                  @if (imageToAnalyze(); as image) {
+                    <img [src]="image.dataUrl" alt="Image preview" class="max-h-full max-w-full object-contain rounded-lg">
+                  } @else {
+                    <div class="text-center text-gray-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mx-auto mb-2"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
+                      <span>Click or drag to upload</span>
+                    </div>
+                  }
+                </div>
+                <label class="block text-gray-300 mt-4 mb-2">2. Ask the AI</label>
+                <textarea [ngModel]="analysisPrompt()" (ngModelChange)="analysisPrompt.set($event)" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3" rows="3" placeholder="e.g., What is the main subject? Make this black and white." title="Enter your question for the AI. For example: 'Describe the mood of this scene.' or 'What kind of architecture is this?'"></textarea>
+                <button (click)="analyzeImage()" [disabled]="!imageToAnalyze() || isAnalyzing()" class="mt-2 w-full btn-primary" title="Send image and prompt to AI for analysis">
+                  @if (isAnalyzing()) { <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> }
+                  <span>Analyze</span>
+                </button>
+              </div>
+              <div>
+                <label class="block text-gray-300 mb-2">Analysis Result</label>
+                <div class="bg-gray-900/70 rounded-lg p-4 h-full min-h-[200px] whitespace-pre-wrap overflow-y-auto custom-scrollbar">
+                    {{ analysisResult() || 'Analysis will appear here...' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Generate Image Tab -->
+        @if (activeVisionTab() === 'generateImage') {
+          <div class="animate-fade-in">
+            <textarea [ngModel]="imageGenerationPrompt()" (ngModelChange)="imageGenerationPrompt.set($event)" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3" rows="3" placeholder="Describe the image you want to create..." title="Enter a detailed description of the image you want the AI to create."></textarea>
+            <div class="my-4">
+              <label class="block text-gray-300 mb-2">Aspect Ratio</label>
+              <div class="flex flex-wrap gap-2">
+                @for (ratio of aspectRatios; track ratio) {
+                  <button (click)="selectedAspectRatio.set(ratio)" class="px-3 py-1.5 text-sm rounded-md transition-colors" [class.bg-indigo-600]="selectedAspectRatio() === ratio" [class.bg-gray-700]="selectedAspectRatio() !== ratio" [class.hover:bg-gray-600]="selectedAspectRatio() !== ratio" [title]="'Set aspect ratio to ' + ratio">
+                    {{ ratio }}
+                  </button>
+                }
+              </div>
+            </div>
+            <button (click)="generateImage()" [disabled]="!imageGenerationPrompt() || isGeneratingImage()" class="w-full btn-primary" title="Generate a new image based on your prompt">
+              @if (isGeneratingImage()) { <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> }
+              <span>Generate Image</span>
+            </button>
+            <div class="mt-4 bg-gray-900/70 rounded-lg p-4 flex justify-center items-center min-h-[300px]">
+              @if (generatedImageUrl()) {
+                <img [src]="generatedImageUrl()" alt="Generated image" class="max-h-[400px] max-w-full object-contain rounded-lg">
+              } @else {
+                <span class="text-gray-500">Your generated image will appear here.</span>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Generate Video Tab -->
+        @if (activeVisionTab() === 'generateVideo') {
+          <div class="animate-fade-in">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-gray-300 mb-2">Upload Image to Animate</label>
+                <div class="drop-zone" title="Drop an image file here or click to upload">
+                   <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" (change)="onFileSelected($event, 'animate')">
+                   @if (imageToAnimate(); as image) {
+                    <img [src]="image.dataUrl" alt="Image preview" class="max-h-full max-w-full object-contain rounded-lg">
+                  } @else {
+                    <div class="text-center text-gray-500">
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mx-auto mb-2"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
+                      <span>Click or drag to upload</span>
+                    </div>
+                   }
+                </div>
+                <textarea [ngModel]="videoPrompt()" (ngModelChange)="videoPrompt.set($event)" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 mt-4" rows="2" placeholder="Describe the animation..." title="Enter a prompt to describe how the image should be animated."></textarea>
+                <button (click)="generateVideo()" [disabled]="!imageToAnimate() || isGeneratingVideo()" class="mt-2 w-full btn-primary" title="Generate a video based on your image and prompt">
+                   @if (isGeneratingVideo()) { <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> }
+                  <span>Generate Video</span>
+                </button>
+              </div>
+              <div>
+                <label class="block text-gray-300 mb-2">Generated Video</label>
+                <div class="bg-gray-900/70 rounded-lg p-4 flex justify-center items-center min-h-[200px] h-full">
+                  @if (generatedVideoUrl()) {
+                    <video [src]="generatedVideoUrl()" controls autoplay loop class="max-h-full max-w-full rounded-lg"></video>
+                  } @else if (isGeneratingVideo()) {
+                    <div class="text-center text-gray-400">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mx-auto mb-4"></div>
+                        <p>{{ videoGenerationStatus() }}</p>
+                    </div>
+                  } @else {
+                    <span class="text-gray-500">Your generated video will appear here.</span>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
