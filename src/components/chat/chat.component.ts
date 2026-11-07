@@ -74,7 +74,7 @@ export class StudioComponent {
   private analyser: AnalyserNode | null = null;
   private animationFrameId: number | null = null;
   private silenceStart = 0;
-  private dataArray: Uint8Array | null = null;
+  private dataArray: Uint8Array<ArrayBuffer> | null = null;
   private readonly REQUIRED_SILENCE_DURATION = 1500; // in ms
 
   // Vision Studio State
